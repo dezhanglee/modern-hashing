@@ -37,7 +37,7 @@ class Bucket:
     def rebuild(self): # Todo: Cauchy: need to change the hash function, like change the modular
         # Generate new seed and rehash all keys
         self.seed = random.randint(1, 100)
-        self.M = self.max_slots + random.randint(1, 100)
+        self.M = self.max_slots + self.seed
         new_fingerprints = {}
         for i in range(self.count):
             key = self.slots[i]
