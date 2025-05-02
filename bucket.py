@@ -5,10 +5,13 @@ from collections import defaultdict
 class Bucket:
     def __init__(self, max_slots, log_n):
         self.slots = [None] * max_slots
+        self.max_slots = max_slots
         self.count = 0
         self.fingerprints = dict()  # {fingerprint: position}
-        self.M = (log_n)**9  # Fingerprint range from Lemma 4.1
-        self.seed = random.randint(1, 1000000)  # Per-bucket seed
+        # self.M = (log_n)**9  # Fingerprint range from Lemma 4.1
+        self.seed = random.randint(1, 100)  # Per-bucket seed
+        self.M = max_slots + self.seed
+
         
     def fingerprint(self, key):
         # Simple fingerprint using seed and modular hashing
@@ -20,6 +23,10 @@ class Bucket:
             # Collision: Rebuild the bucket
             self.rebuild()
             return self.insert(key)  # Retry insertion
+        if self.count + 1 > self.max_slots:
+            # Overflow: Rebuild the bucket
+            self.rebuild()
+            return self.insert(key)  # Retry insertion
         
         pos = self.count
         self.slots[pos] = key
@@ -27,9 +34,10 @@ class Bucket:
         self.count += 1
         return True
     
-    def rebuild(self):
+    def rebuild(self): # Todo: Cauchy: need to change the hash function, like change the modular
         # Generate new seed and rehash all keys
-        self.seed = random.randint(1, 1000000)
+        self.seed = random.randint(1, 100)
+        self.M = self.max_slots + self.seed
         new_fingerprints = {}
         for i in range(self.count):
             key = self.slots[i]
@@ -70,9 +78,10 @@ class PartitionHashTable:
     def __init__(self, n, w):
         self.n = n
         self.w = w
+        c = 5 # Cauchy: change from 100 to 5
         log_n = math.log2(n)
-        self.bucket_size = int(log_n**3 + 100 * log_n**2)  # Example parameters
-        self.num_buckets = n // self.bucket_size
+        self.bucket_size = int(log_n**3 + c * log_n**2)  # Example parameters
+        self.num_buckets = int(n // (log_n**3))
         self.buckets = [Bucket(self.bucket_size, log_n) for _ in range(self.num_buckets)]
         self.hash_to_bucket = lambda key: key % self.num_buckets  # Simple hash
     
